@@ -13,12 +13,11 @@ class OFB:
 
     #Basic Skeleton for encryption        
     def encrypt(self, input):
-        def loopBody(block, enNonce, cipherText):
+        def loopBody(block, enNonce):
             out = []
             for i in range(len(block)):
                 out.append(block[i] ^ enNonce[i])
-            cipherText += self._convertToString(out)
-            #return out
+            return out
 
         blocks = self._createBlocks(input)
         for i in range(len(blocks)):
@@ -32,11 +31,10 @@ class OFB:
         for _ in range(len(blocks)):
             lastNonce = self.DES.encrypt(lastNonce, False)
             enNonces.append(lastNonce)
-        #cipherBlocks = 
-        Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], enNonces[i], cipherText) for i in range(len(blocks)))
+        cipherBlocks = Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], enNonces[i]) for i in range(len(blocks)))
 
-        #for each in cipherBlocks:
-        #    cipherText += self._convertToString(each)
+        for each in cipherBlocks:
+            cipherText += self._convertToString(each)
         return cipherText, nonce
 
     #Basic Skeleton for decryption     
@@ -95,4 +93,3 @@ class OFB:
         for each in block:
             newBlock+=chr(each)
         return newBlock
-        
