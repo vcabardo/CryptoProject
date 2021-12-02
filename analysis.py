@@ -5,7 +5,6 @@ import time
 import string
 import random
 from random import randrange
-
 import CBC
 import OFB
 import CTR
@@ -22,8 +21,15 @@ decrypt_y_cbc = []
 decrypt_y_ofb = []
 decrypt_y_ctr = []
 
-#subject to change when we decide how large the inputs should be
+cbc_encryption_elapsed_time = 0
+cbc_decryption_elapsed_time = 0
+ofb_encryption_elapsed_time = 0
+ofb_decryption_elapsed_time = 0
+ctr_encryption_elapsed_time = 0
+ctr_decryption_elapsed_time = 0
+
 num_blocks = [1, 2, 3, 4, 5, 6, 7, 8]
+num_runs = 5
 
 for i in range(8):
     #create a plaintext message with a size that gets larger with each iteration
@@ -32,64 +38,70 @@ for i in range(8):
 
     ###################################################
     #time the CBC encryption operation
-    start = time.time()
+    for j in range(num_runs):
+        start = time.time()
 
-    CBC_object = CBC.CBC(8, key);
-    ciphertext, iv = CBC_object.encrypt(str)
+        CBC_object = CBC.CBC(8, key);
+        ciphertext, iv = CBC_object.encrypt(str)
 
-    end = time.time();
-    cbc_encryption_elapsed_time = end - start;
+        end = time.time();
+        cbc_encryption_elapsed_time += (end - start) / num_runs;
+
+        #time the CBC decryption operation
+        start = time.time()
+
+        plaintext = CBC_object.decrypt(ciphertext, iv)
+
+        end = time.time();
+        cbc_decryption_elapsed_time += (end - start) / num_runs;
+
     encrypt_y_cbc.append(cbc_encryption_elapsed_time)
-
-    #time the CBC decryption operation
-    start = time.time()
-
-    plaintext = CBC_object.decrypt(ciphertext, iv)
-
-    end = time.time();
-    cbc_decryption_elapsed_time = end - start;
     decrypt_y_cbc.append(cbc_decryption_elapsed_time)
 
     ###################################################
 
     #time the OFB encryption operation
-    start = time.time()
+    for j in range(num_runs):
+        start = time.time()
 
-    OFB_object = OFB.OFB(8, key, 4);
-    ciphertext, iv = OFB_object.encrypt(str)
+        OFB_object = OFB.OFB(8, key, 4);
+        ciphertext, iv = OFB_object.encrypt(str)
 
-    end = time.time();
-    ofb_encryption_elapsed_time = end - start;
+        end = time.time();
+        ofb_encryption_elapsed_time += (end - start) / num_runs;
+
+        #time the OFB decryption operation
+        start = time.time()
+
+        plaintext = OFB_object.decrypt(ciphertext, iv)
+
+        end = time.time();
+        ofb_decryption_elapsed_time += (end - start) / num_runs;
+
     encrypt_y_ofb.append(ofb_encryption_elapsed_time)
-
-    #time the OFB decryption operation
-    start = time.time()
-
-    plaintext = OFB_object.decrypt(ciphertext, iv)
-
-    end = time.time();
-    ofb_decryption_elapsed_time = end - start;
     decrypt_y_ofb.append(ofb_decryption_elapsed_time)
 
     ###################################################
 
     #time the CTR encryption operation
-    start = time.time()
+    for j in range(num_runs):
+        start = time.time()
 
-    CTR_object = CTR.CTR(8, key, 4);
-    ciphertext, iv = CTR_object.encrypt(str)
+        CTR_object = CTR.CTR(8, key, 4);
+        ciphertext, iv = CTR_object.encrypt(str)
 
-    end = time.time();
-    ctr_encryption_elapsed_time = end - start;
+        end = time.time();
+        ctr_encryption_elapsed_time += (end - start) / num_runs;
+
+        #time the CTR decryption operation
+        start = time.time()
+
+        plaintext = CTR_object.decrypt(ciphertext, iv)
+
+        end = time.time();
+        ctr_decryption_elapsed_time += (end - start) / num_runs;
+
     encrypt_y_ctr.append(ctr_encryption_elapsed_time)
-
-    #time the CTR decryption operation
-    start = time.time()
-
-    plaintext = CTR_object.decrypt(ciphertext, iv)
-
-    end = time.time();
-    ctr_decryption_elapsed_time = end - start;
     decrypt_y_ctr.append(ctr_decryption_elapsed_time)
 
     ###################################################
@@ -104,7 +116,7 @@ plt.plot(num_blocks, encrypt_y_ofb, label = "OFB Mode")
 plt.plot(num_blocks, encrypt_y_ctr, label = "CTR Mode")
 
 # naming the x axis
-plt.ylabel('Speed of Operation (Seconds)')
+plt.ylabel('Time Taken For Operation (Seconds)')
 # naming the y axis
 plt.xlabel('Size of Input (kB)')
 
