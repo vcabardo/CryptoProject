@@ -12,16 +12,19 @@ class CTR:
         self.DES = myDES.DESBase(key)
         
 
-    #Basic Skeleton for encryption        
+    #Encryption        
     def encrypt(self, input):
+        #Loop body definition, in order to enable parallelization 
         def loopBody(block, CTR, increment):
             CTR = self._incrementCTR(CTR, increment)            
             CTR = self.DES.encrypt(CTR, False)
             out = []
+	    #Xor bytes of CTR and block
             for i in range(len(block)):
                 out.append(block[i] ^ CTR[i])
             return out
-            
+
+        #Create the blocks, and convert from string to bytes
         blocks = self._createBlocks(input)
         for i in range(len(blocks)):
             blocks[i] = self._convertToBytes(blocks[i])
@@ -33,13 +36,16 @@ class CTR:
         cipherText = ""
         #Create the ciphertext from the encrypted blocks
         cipherBlocks = Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], CTR, i) for i in range(len(blocks)))
+
+        #Combine blocks and convert back to string
         for each in cipherBlocks:
             cipherText += self._convertToString(each)
 
         return cipherText,CTR
 
-    #Basic Skeleton for decryption     
+    #Decryption     
     def decrypt(self, input, CTR):
+        #Loop body definition, in order to enable parallelization 
         def loopBody(block, CTR, increment):
             CTR = self._incrementCTR(CTR, increment)
             CTR = self.DES.encrypt(CTR, False)
@@ -48,6 +54,7 @@ class CTR:
                 out.append(block[i] ^ CTR[i])
             return out
 
+        #Create the blocks, and convert from string to bytes
         blocks = self._createBlocks(input)
         for i in range(len(blocks)):
             blocks[i] = self._convertToBytes(blocks[i])
@@ -56,7 +63,8 @@ class CTR:
         #Create the plain text from the decrypted blocks
         plainBlocks = Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], CTR, i) for i in range(len(blocks)))
 
-        for each in plainBlocks:
+        #Combine blocks and convert back to string
+	for each in plainBlocks:
             plainText += self._convertToString(each)
         return plainText
 
@@ -81,18 +89,21 @@ class CTR:
             output.append(random.randint(0,255))
         return output
 
+    #Convert a block from a string to a list of bytes
     def _convertToBytes(self, block):
         newBlock = []
         for each in block:
             newBlock.append(ord(each))
         return newBlock
 
+    #Convert a block from a list of bytes to a string
     def _convertToString(self, block):
         newBlock = ""
         for each in block:
             newBlock+=chr(each)
         return newBlock
 
+    #Increment the CTR, this is needed inorder to carry correctly
     def _incrementCTR(self, CTR, increment):
         CTR[-1] += increment
         i = -1
