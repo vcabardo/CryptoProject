@@ -1,5 +1,6 @@
 class DESBase():
     
+    #Iniltialize global table
     # permuted choice (table 1)
     __pc1 = [
         56, 48, 40, 32, 24, 16, 8,
@@ -115,20 +116,26 @@ class DESBase():
 		33,  1, 41,  9, 49, 17, 57, 25,
 		32,  0, 40,  8, 48, 16, 56, 24]
     
+    #Intilize with key with 8 bytes
     def __init__(self, key):
         if len(key) != 8:
             print("Key is not the correct size, needs to be 8 bytes")
             exit()
+	#Convert from bytes to bits then generate subkeys
         self.k = self.bytesToBits(key)
         self.subK = self.subKeyGeneration(self.k)
         
+    #DES subkey generation implementation 
     def subKeyGeneration(self, key):
         baseKey = []
+	#Pass through permuted choice table 1
         for index in self.__pc1:
             baseKey.append(key[index])
 
         subkeys = []
+	#Create the 16 subkeys for encryption
         for i in range(16):
+	    #Shift based on table value
             shifts = self.__leftShifts[i]
             subkeys.append([])
             #Left side of key
@@ -146,19 +153,22 @@ class DESBase():
 
         return subkeys
     
+    #Utility function to convert bytes to bits
     def bytesToBits(self, byts):
         bits = []
         for byte in byts:
             bits += self.get8Bits(byte)
         return bits
         
+    #Returns 8 bit rep of a byte
     def get8Bits(self, byte):
         strB = format(byte, "08b")
         ret = []
         for i in range(len(strB)):
             ret.append(int(strB[i]))
         return ret
-        
+       
+    #Convert bits to bytes
     def bitsToBytes(self, bits):
         byts = []
         val = 0
@@ -169,59 +179,74 @@ class DESBase():
                 val = 0
         return byts
         
+    #Encryption algorithm 
     def encrypt(self, block, decrypt):
         if len(block) != 8:
             print("Block is not the correct size, needs to be 8 bytes")    
             exit()
+	#Convert from bytes to bits in order to process permutation
         bits = self.bytesToBits(block)
         permBits = []
 
+	#Pass through the initial permutation
         for index in self.__ip:
-            permBits.append(bits[index])    
+            permBits.append(bits[index])  
+	#Convert from bits to bytes for simple computations
         permBlock = self.bitsToBytes(permBits)
+	
+	#Split into left and right
         left = permBlock[:4]
         right = permBlock[4:]
+	#Begin the 16 rounds
         for i in range(16):
             subKey = self.subK[i]
+	    #If decryption use key in reverese order
             if(decrypt):
                 subKey = self.subK[15-i]
             temp = left
             left = right
+	    #Call round function then XOR
             right = self.roundFunction(right, subKey)
             for k in range(len(right)):
                 right[k] = right[k] ^ temp[k]
+	#Combine blocks together and convert from bytes to bits for final permutation
         permBlock = right + left
         permBits = self.bytesToBits(permBlock)
         finalBits = []
         for index in self.__fp:
             finalBits.append(permBits[index]) 
+	#After permutation convert back to bytes for return value
         return self.bitsToBytes(finalBits)
 
+    #DES round function
     def roundFunction(self, block, key):
+	#Convert to bits inorder to run values through the tables
         bits = self.bytesToBits(block)
-        #Expand
+        #Expand bits
         exBits = []
         for index in self.__expand:
             exBits.append(bits[index])         
-        #XOR
+        #XOR bits, convert to bytes for XOR, then go back to bits
         keyBlock = self.bitsToBytes(key)
         exBlock = self.bitsToBytes(exBits)
         for i in range(len(exBlock)):
             exBlock[i] = exBlock[i] ^ keyBlock[i]
         
         exBits = self.bytesToBits(exBlock)
-        #Sboxes
+        #Sbox conversion
         sBits = []
         for i in range(8):
             shift = i*6
             sBits += self.sBoxConv(self.__sboxes[i], exBits[(shift+0):(shift+6)])
         
-        #Permution
+        #Permutation 
         finalBits = []
         for index in self.__p:
             finalBits.append(sBits[index])
+	#Return the value in bytes
         return self.bitsToBytes(finalBits)
     
+    #Simple function for performing sBox conversions, using given tables
     def sBoxConv(self, sBox, bits):
         row = 2*bits[0]+1*bits[5]
         col = 8*bits[1]+4*bits[2]+2*bits[3]+1*bits[4]
