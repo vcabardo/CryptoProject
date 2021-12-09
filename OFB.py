@@ -11,14 +11,16 @@ class OFB:
         self.jobs = jobs
         self.DES = myDES.DESBase(key)        
 
-    #Basic Skeleton for encryption        
+    #Encryption process       
     def encrypt(self, input):
+        #Loop body definition, in order to enable parallelization 
         def loopBody(block, enNonce):
             out = []
             for i in range(len(block)):
                 out.append(block[i] ^ enNonce[i])
             return out
 
+        #Create the blocks, and convert from string to bytes
         blocks = self._createBlocks(input)
         for i in range(len(blocks)):
             blocks[i] = self._convertToBytes(blocks[i])
@@ -33,18 +35,21 @@ class OFB:
             enNonces.append(lastNonce)
         cipherBlocks = Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], enNonces[i]) for i in range(len(blocks)))
 
+        #Combine blocks and convert back to string
         for each in cipherBlocks:
             cipherText += self._convertToString(each)
         return cipherText, nonce
 
-    #Basic Skeleton for decryption     
+    #Decryption     
     def decrypt(self, input, nonce):
+        #Loop body definition, in order to enable parallelization 
         def loopBody(block, enNonce):
             out = []
             for i in range(len(block)):
                 out.append(block[i] ^ enNonce[i])
             return out
 
+        #Create the blocks, and convert from string to bytes
         blocks = self._createBlocks(input)
         for i in range(len(blocks)):
             blocks[i] = self._convertToBytes(blocks[i])
@@ -57,6 +62,7 @@ class OFB:
             enNonces.append(nonce)
         plainBlocks = Parallel(n_jobs = self.jobs)(delayed(loopBody)(blocks[i], enNonces[i]) for i in range(len(blocks)))
 
+        #Combine blocks and convert back to string
         for each in plainBlocks:
             plainText += self._convertToString(each)
         return plainText
@@ -82,12 +88,14 @@ class OFB:
             output.append(random.randint(0,255))
         return output
 
+    #Convert a block from a string to a list of bytes
     def _convertToBytes(self, block):
         newBlock = []
         for each in block:
             newBlock.append(ord(each))
         return newBlock
 
+    #Convert a block from a list of bytes to a string
     def _convertToString(self, block):
         newBlock = ""
         for each in block:
